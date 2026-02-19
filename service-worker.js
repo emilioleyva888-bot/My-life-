@@ -35,3 +35,10 @@ self.addEventListener("fetch", event => {
       .then(response => response || fetch(event.request))
   );
 });
+
+self.addEventListener("notificationclick", function(event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow("./index.html")
+  );
+});
