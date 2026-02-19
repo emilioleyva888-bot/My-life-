@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temps Regagné</title>
+
+  <!-- Tailwind CDN (léger et suffisant pour ce projet) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff">
+
+  <style>
+    body {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+    }
+  </style>
+</head>
+
+<body class="bg-white text-gray-800 min-h-screen flex flex-col justify-between">
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="p-6 space-y-6">
+
+    <h1 class="text-2xl font-light text-center tracking-wide">
+      Reprendre le contrôle
+    </h1>
+
+    <!-- BOUTONS ACTIVITÉS -->
+    <div id="activities" class="grid grid-cols-2 gap-4">
+      <button class="activity-btn">Lire</button>
+      <button class="activity-btn">Méditer</button>
+      <button class="activity-btn">Guitare</button>
+      <button class="activity-btn">Sport</button>
+      <button class="activity-btn">Travail</button>
+      <button class="activity-btn">Autre</button>
+    </div>
+
+    <!-- SÉLECTEUR DURÉE -->
+    <div id="duration-section" class="hidden space-y-4 text-center">
+      <div class="flex justify-center gap-3 flex-wrap">
+        <button class="duration-btn">15</button>
+        <button class="duration-btn">30</button>
+        <button class="duration-btn">45</button>
+        <button class="duration-btn">60</button>
+      </div>
+
+      <input id="custom-duration"
+             type="number"
+             placeholder="Durée libre (minutes)"
+             class="border rounded p-2 w-40 text-center">
+
+      <button id="validate-btn"
+              class="bg-gray-900 text-white px-6 py-2 rounded-full">
+        Valider
+      </button>
+    </div>
+  </main>
+
+  <!-- DASHBOARD -->
+  <footer class="p-6 border-t text-center space-y-3">
+
+    <div>
+      <p class="text-sm text-gray-500">Temps de vie regagné</p>
+      <p id="total-time" class="text-3xl font-light">0 min</p>
+    </div>
+
+    <p id="gratitude" class="text-sm text-gray-600 italic"></p>
+
+  </footer>
+
+<script>
+let selectedActivity = null;
+let selectedDuration = 0;
+
+// Récupération du temps sauvegardé
+let totalTime = localStorage.getItem("totalTime")
+  ? parseInt(localStorage.getItem("totalTime"))
+  : 0;
+
+const totalTimeDisplay = document.getElementById("total-time");
+const gratitudeDisplay = document.getElementById("gratitude");
+
+// Mise à jour affichage initial
+updateDisplay();
+
+// Gestion boutons activité
+document.querySelectorAll(".activity-btn").forEach(btn => {
+  btn.className += " border rounded-xl p-4 text-lg font-light hover:bg-gray-100 transition";
+
+  btn.addEventListener("click", () => {
+    selectedActivity = btn.innerText;
+    document.getElementById("duration-section").classList.remove("hidden");
+  });
+});
+
+// Gestion boutons durée rapide
+document.querySelectorAll(".duration-btn").forEach(btn => {
+  btn.className += " border px-4 py-2 rounded-full hover:bg-gray-100 transition";
+
+  btn.addEventListener("click", () => {
+    selectedDuration = parseInt(btn.innerText);
+  });
+});
+
+// Validation
+document.getElementById("validate-btn").addEventListener("click", () => {
+  const customValue = parseInt(document.getElementById("custom-duration").value);
+
+  if (customValue) {
+    selectedDuration = customValue;
+  }
+
+  if (selectedDuration > 0) {
+    totalTime += selectedDuration;
+    localStorage.setItem("totalTime", totalTime);
+    animateCounter(totalTime);
+    showGratitude(totalTime);
+    resetSelection();
+  }
+});
+
+// Animation fluide compteur
+function animateCounter(target) {
+  let current = 0;
+  const increment = target / 60;
+
+  const interval = setInterval(() => {
+    current += increment;
+    if (current >= target) {
+      current = target;
+      clearInterval(interval);
+    }
+    totalTimeDisplay.innerText = Math.floor(current) + " min";
+  }, 20);
+}
+
+function updateDisplay() {
+  totalTimeDisplay.innerText = totalTime + " min";
+  showGratitude(totalTime);
+}
+
+function showGratitude(minutes) {
+  const phrases = [
+    "Vous avez repris le contrôle.",
+    "Chaque minute compte.",
+    "Votre attention est précieuse.",
+    "Vous avancez vers plus de clarté."
+  ];
+
+  const hours = (minutes / 60).toFixed(1);
+
+  gratitudeDisplay.innerText =
+    phrases[Math.floor(Math.random() * phrases.length)] +
+    " (" + hours + "h libérées)";
+}
+
+function resetSelection() {
+  selectedDuration = 0;
+  document.getElementById("custom-duration").value = "";
+}
+</script>
+
+<script>
+// Enregistrement du service worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
