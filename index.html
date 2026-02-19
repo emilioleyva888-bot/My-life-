@@ -1,81 +1,16 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Temps Regagné</title>
+
 
   <!-- Tailwind CDN (léger et suffisant pour ce projet) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#ffffff">
-
-  <style>
-    body {
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
-    }
-  </style>
-</head>
-
-<body class="bg-white text-gray-800 min-h-screen flex flex-col justify-between">
-
-  <!-- CONTENU PRINCIPAL -->
-  <main class="p-6 space-y-6">
-
-    <h1 class="text-2xl font-light text-center tracking-wide">
-      Reprendre le contrôle
-    </h1>
-
-    <!-- BOUTONS ACTIVITÉS -->
-    <div id="activities" class="grid grid-cols-2 gap-4">
-      <button class="activity-btn">Lire</button>
-      <button class="activity-btn">Méditer</button>
-      <button class="activity-btn">Guitare</button>
-      <button class="activity-btn">Sport</button>
-      <button class="activity-btn">Travail</button>
-      <button class="activity-btn">Autre</button>
-    </div>
-
-    <!-- SÉLECTEUR DURÉE -->
-    <div id="duration-section" class="hidden space-y-4 text-center">
-      <div class="flex justify-center gap-3 flex-wrap">
-        <button class="duration-btn">15</button>
-        <button class="duration-btn">30</button>
-        <button class="duration-btn">45</button>
-        <button class="duration-btn">60</button>
-      </div>
-
-      <input id="custom-duration"
-             type="number"
-             placeholder="Durée libre (minutes)"
-             class="border rounded p-2 w-40 text-center">
-
-      <button id="validate-btn"
-              class="bg-gray-900 text-white px-6 py-2 rounded-full">
-        Valider
-      </button>
-    </div>
-  </main>
-
-  <!-- DASHBOARD -->
-  <footer class="p-6 border-t text-center space-y-3">
-
-    <div>
-      <p class="text-sm text-gray-500">Temps de vie regagné</p>
-      <p id="total-time" class="text-3xl font-light">0 min</p>
-    </div>
-
-    <p id="gratitude" class="text-sm text-gray-600 italic"></p>
-
-  </footer>
-
 <script>
+/* ================================
+   INITIALISATION
+================================ */
+
 let selectedActivity = null;
 let selectedDuration = 0;
 
-// Récupération du temps sauvegardé
 let totalTime = localStorage.getItem("totalTime")
   ? parseInt(localStorage.getItem("totalTime"))
   : 0;
@@ -83,10 +18,16 @@ let totalTime = localStorage.getItem("totalTime")
 const totalTimeDisplay = document.getElementById("total-time");
 const gratitudeDisplay = document.getElementById("gratitude");
 
-// Mise à jour affichage initial
+/* ================================
+   AFFICHAGE INITIAL
+================================ */
+
 updateDisplay();
 
-// Gestion boutons activité
+/* ================================
+   BOUTONS ACTIVITÉS
+================================ */
+
 document.querySelectorAll(".activity-btn").forEach(btn => {
   btn.className += " border rounded-xl p-4 text-lg font-light hover:bg-gray-100 transition";
 
@@ -96,7 +37,10 @@ document.querySelectorAll(".activity-btn").forEach(btn => {
   });
 });
 
-// Gestion boutons durée rapide
+/* ================================
+   BOUTONS DURÉE RAPIDE
+================================ */
+
 document.querySelectorAll(".duration-btn").forEach(btn => {
   btn.className += " border px-4 py-2 rounded-full hover:bg-gray-100 transition";
 
@@ -105,8 +49,12 @@ document.querySelectorAll(".duration-btn").forEach(btn => {
   });
 });
 
-// Validation
+/* ================================
+   VALIDATION TEMPS REGAGNÉ
+================================ */
+
 document.getElementById("validate-btn").addEventListener("click", () => {
+
   const customValue = parseInt(document.getElementById("custom-duration").value);
 
   if (customValue) {
@@ -114,28 +62,66 @@ document.getElementById("validate-btn").addEventListener("click", () => {
   }
 
   if (selectedDuration > 0) {
+
     totalTime += selectedDuration;
+
     localStorage.setItem("totalTime", totalTime);
+
     animateCounter(totalTime);
     showGratitude(totalTime);
     resetSelection();
   }
 });
 
-// Animation fluide compteur
+/* ================================
+   BOUTON TEMPS PERDU (ROUGE)
+================================ */
+
+document.getElementById("lost-time-btn").addEventListener("click", () => {
+
+  const lost = parseInt(prompt("Combien de minutes passées sur les réseaux aujourd'hui ?"));
+
+  if (lost && lost > 0) {
+
+    totalTime -= lost;
+
+    if (totalTime < 0) totalTime = 0;
+
+    localStorage.setItem("totalTime", totalTime);
+
+    animateCounter(totalTime);
+
+    gratitudeDisplay.innerText =
+      "Vous avez identifié " + lost + " min perdues. Demain est une nouvelle opportunité.";
+  }
+});
+
+/* ================================
+   ANIMATION COMPTEUR
+================================ */
+
 function animateCounter(target) {
+
   let current = 0;
   const increment = target / 60;
 
   const interval = setInterval(() => {
+
     current += increment;
+
     if (current >= target) {
       current = target;
       clearInterval(interval);
     }
+
     totalTimeDisplay.innerText = Math.floor(current) + " min";
+
   }, 20);
 }
+
+/* ================================
+   AFFICHAGE & GRATITUDE
+================================ */
 
 function updateDisplay() {
   totalTimeDisplay.innerText = totalTime + " min";
@@ -143,6 +129,7 @@ function updateDisplay() {
 }
 
 function showGratitude(minutes) {
+
   const phrases = [
     "Vous avez repris le contrôle.",
     "Chaque minute compte.",
@@ -161,22 +148,52 @@ function resetSelection() {
   selectedDuration = 0;
   document.getElementById("custom-duration").value = "";
 }
-</script>
 
-<script>
-// Enregistrement du service worker
+/* ================================
+   NOTIFICATIONS QUOTIDIENNES 21H
+================================ */
+
+if ("Notification" in window) {
+  Notification.requestPermission();
+}
+
+function scheduleDailyNotification() {
+
+  const now = new Date();
+  const target = new Date();
+
+  target.setHours(21, 0, 0, 0);
+
+  if (now > target) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  const timeout = target.getTime() - now.getTime();
+
+  setTimeout(() => {
+    showNotification();
+    scheduleDailyNotification();
+  }, timeout);
+}
+
+function showNotification() {
+
+  if (Notification.permission === "granted") {
+    new Notification("Temps Regagné 🌿", {
+      body: "Avez-vous repris le contrôle aujourd'hui ?",
+    });
+  }
+}
+
+scheduleDailyNotification();
+
+/* ================================
+   SERVICE WORKER (PWA)
+================================ */
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
+
 </script>
 
-</body>
-</html>
-
-<!-- BOUTON TEMPS PERDU -->
-<div class="pt-4">
-  <button id="lost-time-btn"
-          class="w-full bg-red-500 text-white py-4 rounded-xl text-lg font-light hover:bg-red-600 transition">
-    Temps perdu (Réseaux)
-  </button>
-</div>
